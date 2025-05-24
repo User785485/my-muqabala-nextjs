@@ -70,21 +70,34 @@ export async function GET(
     const htmlContent = await data.text();
     console.log(`✅ Fichier servi: ${fullPath} (${htmlContent.length} octets)`);
     
-    // LOGS DE DIAGNOSTIC POUR BARRE DE DÉBOGAGE
-    console.log(`🔍 DIAGNOSTIC API: Analyse du contenu HTML récupéré depuis Supabase`);
-    console.log(`Contenu brut reçu de Supabase (premiers 500 caractères): ${htmlContent.substring(0, 500).replace(/\n/g, '').replace(/\s+/g, ' ')}`);
+    // Détection de l'environnement d'exécution
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isDebugMode = isDevelopment && request.nextUrl.searchParams.get('debug') === 'true';
     
-    // Recherche d'indices de barre de débogage dans le contenu Supabase
-    const hasGreenColor = htmlContent.includes('#28a745');
-    const hasFixedPosition = htmlContent.includes('position: fixed') || htmlContent.includes('position:fixed');
-    const hasDebugText = htmlContent.includes('Variables:') || htmlContent.includes('Encodage:') || htmlContent.includes('Non remplacées:');
+    // Par défaut, on ne modifie jamais le HTML original en production
+    let finalHtmlContent = htmlContent;
     
-    console.log(`API > Vérification présence #28a745 (vert): ${hasGreenColor ? '⚠️ PRÉSENTE' : '✅ ABSENTE'}`);
-    console.log(`API > Vérification présence position: fixed: ${hasFixedPosition ? '⚠️ PRÉSENTE' : '✅ ABSENTE'}`);
-    console.log(`API > Vérification présence texte debug: ${hasDebugText ? '⚠️ PRÉSENT' : '✅ ABSENT'}`);
-    
-    // Script de diagnostic pour détecter si la barre est ajoutée par un script externe
-    const diagnosticScript = `
+    // ANALYSE ET DIAGNOSTIC - UNIQUEMENT EN MODE DÉVELOPPEMENT
+    if (isDevelopment) {
+      // Logs de base pour le développement
+      console.log(`🔍 DIAGNOSTIC API: Analyse du contenu HTML récupéré depuis Supabase`);
+      
+      if (isDebugMode) {
+        // Logs détaillés uniquement en mode debug explicit
+        console.log(`Contenu brut reçu de Supabase (premiers 500 caractères): ${htmlContent.substring(0, 500).replace(/\n/g, '').replace(/\s+/g, ' ')}`);
+        
+        // Recherche d'indices de barre de débogage
+        const hasGreenColor = htmlContent.includes('#28a745');
+        const hasFixedPosition = htmlContent.includes('position: fixed') || htmlContent.includes('position:fixed');
+        const hasDebugText = htmlContent.includes('Variables:') || htmlContent.includes('Encodage:') || htmlContent.includes('Non remplacées:');
+        
+        console.log(`API > Vérification présence #28a745 (vert): ${hasGreenColor ? '⚠️ PRÉSENTE' : '✅ ABSENTE'}`);
+        console.log(`API > Vérification présence position: fixed: ${hasFixedPosition ? '⚠️ PRÉSENTE' : '✅ ABSENTE'}`);
+        console.log(`API > Vérification présence texte debug: ${hasDebugText ? '⚠️ PRÉSENT' : '✅ ABSENT'}`);
+        
+        // Script de diagnostic pour détecter si la barre est ajoutée par un script externe
+        // IMPORTANT: Ce script n'est ajouté qu'en mode développement ET avec paramètre debug=true
+        const diagnosticScript = `
 <script>
   console.log("🔍 API: Analyse du DOM pour détecter la barre de débogage");
   document.addEventListener('DOMContentLoaded', () => {
@@ -93,19 +106,20 @@ export async function GET(
     debugElements.forEach(el => console.log("API > Source HTML:", el.outerHTML));
   });
 </script>`;
-    
-    // Préparer le HTML avec script de diagnostic
-    let finalHtmlContent = htmlContent;
-    if (htmlContent.includes('</body>')) {
-      finalHtmlContent = htmlContent.replace('</body>', `${diagnosticScript}
+        
+        // Injecter le script uniquement en mode debug explicite
+        if (htmlContent.includes('</body>')) {
+          finalHtmlContent = htmlContent.replace('</body>', `${diagnosticScript}
 </body>`);
-    } else {
-      finalHtmlContent = htmlContent + diagnosticScript;
+        } else {
+          finalHtmlContent = htmlContent + diagnosticScript;
+        }
+        
+        console.log(`API > 🔍 Script de diagnostic côté client ajouté au document (mode debug activé)`);
+      }
     }
     
-    console.log(`API > 🔍 Script de diagnostic côté client ajouté au document`);
-    console.log(`API > Contenu final servi (premiers 500 caractères): ${finalHtmlContent.substring(0, 500).replace(/\n/g, '').replace(/\s+/g, ' ')}`);
-      
+    // IMPORTANT: En production, on sert toujours le HTML original sans aucune modification
     return new NextResponse(finalHtmlContent, {
       status: 200,
       headers: {
