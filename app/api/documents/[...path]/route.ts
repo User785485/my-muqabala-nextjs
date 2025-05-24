@@ -74,8 +74,63 @@ export async function GET(
     const isDevelopment = process.env.NODE_ENV === 'development';
     const isDebugMode = isDevelopment && request.nextUrl.searchParams.get('debug') === 'true';
     
-    // Par défaut, on ne modifie jamais le HTML original en production
+    // SOLUTION RADICALE : TOUJOURS nettoyer la barre de débogage, même en production
+    // Cela garantit que même les documents existants dans Supabase seront nettoyés
     let finalHtmlContent = htmlContent;
+    
+    // Patterns pour supprimer activement la barre verte, quelle que soit sa source
+    const debugBarPatterns = [
+      /<div[^>]*style="[^"]*position:\s*fixed[^"]*background(?:-color)?:\s*#28a745[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+      /<div[^>]*style='[^']*position:\s*fixed[^']*background(?:-color)?:\s*#28a745[^']*'[^>]*>[\s\S]*?<\/div>/gi,
+      /<div[^>]*(?:class|id)="[^"]*debug[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+      /<div[^>]*>[\s\S]*?\|\s*Type:\s*\w+[\s\S]*?<\/div>/gi,
+      /<div[^>]*style="[^"]*background-color:\s*#28a745[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+      /<div[^>]*class="[^"]*(?:debug-bar|debug|debugbar)[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+      /<div[^>]*id="[^"]*(?:debug-bar|debug|debugbar)[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+      /<div[^>]*style="[^"]*z-index:\s*9999[^"]*position:\s*fixed[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    ];
+    
+    // TOUJOURS nettoyer le HTML avant de le servir
+    debugBarPatterns.forEach(pattern => {
+      finalHtmlContent = finalHtmlContent.replace(pattern, '');
+    });
+    
+    // Ajouter un script de suppression automatique pour garantir l'élimination complète
+    const autoCleanScript = `
+<script>
+(function() {
+  function removeDebugBar() {
+    const selectors = [
+      'div[style*="#28a745"]', 
+      'div[style*="background-color: #28a745"]',
+      'div[style*="position: fixed"][style*="z-index: 9999"]',
+      '.debug-bar', '#debug-bar',
+      '[class*="debug"]'
+    ];
+    selectors.forEach(s => {
+      const elements = document.querySelectorAll(s);
+      elements.forEach(el => el.parentNode?.removeChild(el));
+    });
+  }
+  // Exécuter immédiatement
+  removeDebugBar();
+  // Exécuter après chargement du DOM
+  document.addEventListener('DOMContentLoaded', removeDebugBar);
+  // Exécuter périodiquement pour garantir la suppression
+  setInterval(removeDebugBar, 500);
+})();
+</script>`;
+    
+    // Injecter le script de nettoyage dans TOUS les documents
+    if (finalHtmlContent.includes('</body>')) {
+      finalHtmlContent = finalHtmlContent.replace('</body>', `${autoCleanScript}
+</body>`);
+    } else if (finalHtmlContent.includes('</html>')) {
+      finalHtmlContent = finalHtmlContent.replace('</html>', `${autoCleanScript}
+</html>`);
+    } else {
+      finalHtmlContent += autoCleanScript;
+    }
     
     // ANALYSE ET DIAGNOSTIC - UNIQUEMENT EN MODE DÉVELOPPEMENT
     if (isDevelopment) {
