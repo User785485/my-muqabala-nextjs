@@ -14,68 +14,45 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * URL: /api/documents/[...path]
  * Exemple: /api/documents/vente/client-xyz.html
  */
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
-  // Récupérer le chemin complet depuis les paramètres
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> }
+) {
+  // Await pour récupérer les params (nouveau dans Next.js 15)
+  const params = await context.params;
   const pathSegments = params.path || [];
   const fullPath = pathSegments.join('/');
   
   console.log(`📄 API Documents: Requête reçue pour: ${fullPath}`);
   
   try {
-    // Récupérer le fichier depuis Supabase Storage
     const { data, error } = await supabase.storage
       .from(bucketName)
       .download(fullPath);
     
-    if (error) {
-      console.error(`❌ API Documents: Erreur lors de la récupération du fichier:`, error);
-      
-      // Retourner une erreur 404 si le fichier n'est pas trouvé
+    if (error || !data) {
+      console.error(`❌ Erreur:`, error);
       return new NextResponse(`Document not found: ${fullPath}`, { 
         status: 404,
-        headers: {
-          'Content-Type': 'text/plain'
-        }
+        headers: { 'Content-Type': 'text/plain' }
       });
     }
     
-    if (!data) {
-      console.error(`❌ API Documents: Fichier non trouvé: ${fullPath}`);
-      
-      // Retourner une erreur 404 si aucune donnée n'est reçue
-      return new NextResponse(`Document not found: ${fullPath}`, { 
-        status: 404,
-        headers: {
-          'Content-Type': 'text/plain'
-        }
-      });
-    }
-    
-    // Convertir le Blob en texte HTML
     const htmlContent = await data.text();
+    console.log(`✅ Fichier servi: ${fullPath} (${htmlContent.length} octets)`);
     
-    console.log(`✅ API Documents: Fichier ${fullPath} servi avec succès (${htmlContent.length} octets)`);
-    
-    // Retourner le contenu HTML avec les en-têtes appropriés
     return new NextResponse(htmlContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache d'une heure
-        'Access-Control-Allow-Origin': '*' // Pour éviter les problèmes CORS
+        'Cache-Control': 'public, max-age=3600',
+        'Access-Control-Allow-Origin': '*'
       }
     });
     
   } catch (error) {
-    console.error(`❌ API Documents: Erreur lors du traitement de la requête:`, error);
-    
-    // Retourner une erreur 500 en cas d'erreur serveur
-    return new NextResponse(`Server error: ${error instanceof Error ? error.message : 'Unknown error'}`, { 
-      status: 500,
-      headers: {
-        'Content-Type': 'text/plain'
-      }
-    });
+    console.error(`❌ Erreur serveur:`, error);
+    return new NextResponse('Server error', { status: 500 });
   }
 }
 
