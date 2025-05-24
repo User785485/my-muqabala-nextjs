@@ -70,7 +70,43 @@ export async function GET(
     const htmlContent = await data.text();
     console.log(`✅ Fichier servi: ${fullPath} (${htmlContent.length} octets)`);
     
-    return new NextResponse(htmlContent, {
+    // LOGS DE DIAGNOSTIC POUR BARRE DE DÉBOGAGE
+    console.log(`🔍 DIAGNOSTIC API: Analyse du contenu HTML récupéré depuis Supabase`);
+    console.log(`Contenu brut reçu de Supabase (premiers 500 caractères): ${htmlContent.substring(0, 500).replace(/\n/g, '').replace(/\s+/g, ' ')}`);
+    
+    // Recherche d'indices de barre de débogage dans le contenu Supabase
+    const hasGreenColor = htmlContent.includes('#28a745');
+    const hasFixedPosition = htmlContent.includes('position: fixed') || htmlContent.includes('position:fixed');
+    const hasDebugText = htmlContent.includes('Variables:') || htmlContent.includes('Encodage:') || htmlContent.includes('Non remplacées:');
+    
+    console.log(`API > Vérification présence #28a745 (vert): ${hasGreenColor ? '⚠️ PRÉSENTE' : '✅ ABSENTE'}`);
+    console.log(`API > Vérification présence position: fixed: ${hasFixedPosition ? '⚠️ PRÉSENTE' : '✅ ABSENTE'}`);
+    console.log(`API > Vérification présence texte debug: ${hasDebugText ? '⚠️ PRÉSENT' : '✅ ABSENT'}`);
+    
+    // Script de diagnostic pour détecter si la barre est ajoutée par un script externe
+    const diagnosticScript = `
+<script>
+  console.log("🔍 API: Analyse du DOM pour détecter la barre de débogage");
+  document.addEventListener('DOMContentLoaded', () => {
+    const debugElements = document.querySelectorAll('div[style*=\"#28a745\"], div[style*=\"position: fixed\"]');
+    console.log("API > Éléments potentiels de débogage trouvés: " + debugElements.length);
+    debugElements.forEach(el => console.log("API > Source HTML:", el.outerHTML));
+  });
+</script>`;
+    
+    // Préparer le HTML avec script de diagnostic
+    let finalHtmlContent = htmlContent;
+    if (htmlContent.includes('</body>')) {
+      finalHtmlContent = htmlContent.replace('</body>', `${diagnosticScript}
+</body>`);
+    } else {
+      finalHtmlContent = htmlContent + diagnosticScript;
+    }
+    
+    console.log(`API > 🔍 Script de diagnostic côté client ajouté au document`);
+    console.log(`API > Contenu final servi (premiers 500 caractères): ${finalHtmlContent.substring(0, 500).replace(/\n/g, '').replace(/\s+/g, ' ')}`);
+      
+    return new NextResponse(finalHtmlContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
