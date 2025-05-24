@@ -1,5 +1,7 @@
 # API Documents pour my-muqabala.fr
 
+> Dernière mise à jour: 24 mai 2025 - Correction de la barre de débogage
+
 ## 🚨 CONTEXTE DU PROJET
 
 Ce projet Next.js a été créé pour résoudre un problème d'incompatibilité de frameworks entre le format d'API Next.js et l'application frontend existante basée sur Vite.
