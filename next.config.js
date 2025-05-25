@@ -1,24 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Activer la journalisation des rewrites en développement
+  // Configuration des logs pour le développement
   async rewrites() {
-    console.log('\x1b[33m%s\x1b[0m', '[Next.js Config] Chargement des règles de rewrite');
+    console.log('\x1b[33m%s\x1b[0m', '[Next.js Config] Configuration des routes conviviales');
+    // Aucune règle de rewrite n'est nécessaire car nous utilisons maintenant des routes directes
+    // qui accèdent aux fichiers Supabase directement sans redirection
     return [
-      {
-        // Compte-rendu : /mon-compte-rendu-personnalise-ID.html
-        source: '/mon-compte-rendu-personnalise-:path*',
-        destination: '/api/documents/compte-rendu/:path*',
-      },
-      {
-        // Page de vente : /mon-accompagnement-ID.html
-        source: '/mon-accompagnement-:path*',
-        destination: '/api/documents/vente/:path*',
-      },
-      {
-        // Onboarding : /bienvenu-programme-ID.html
-        source: '/bienvenu-programme-:path*',
-        destination: '/api/documents/onboarding/:path*'
-      }
     ]
   },
   // Configuration supplémentaire pour optimiser la gestion des fichiers HTML
