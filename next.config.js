@@ -17,16 +17,7 @@ const nextConfig = {
       {
         // Onboarding : /bienvenu-programme-ID.html
         source: '/bienvenu-programme-:id*',
-        destination: '/api/documents/onboarding/:id*',
-        // Ajouter un paramètre de log pour tracer cette redirection
-        has: [
-          {
-            type: 'query',
-            key: 'log',
-            value: 'true',
-            optional: true,
-          }
-        ]
+        destination: '/api/documents/onboarding/:id*'
       }
     ]
   },
