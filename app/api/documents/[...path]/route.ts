@@ -14,7 +14,12 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * URL: /api/documents/[...path]
  * Exemple: /api/documents/vente/client-xyz.html
  */
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> }
+) {
+  // Await pour récupérer les params (nouveau dans Next.js 15)
+  const params = await context.params;
   // Récupérer le chemin complet depuis les paramètres
   const pathSegments = params.path || [];
   const fullPath = pathSegments.join('/');
