@@ -6,8 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  // Await pour ru00e9cupu00e9rer les params (nouveau dans Next.js 15)
+  const params = await context.params;
   // Ru00e9cupu00e9rer l'ID depuis les paramu00e8tres
   const id = params.id;
   
