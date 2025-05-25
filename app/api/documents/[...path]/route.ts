@@ -14,17 +14,31 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * URL: /api/documents/[...path]
  * Exemple: /api/documents/vente/client-xyz.html
  */
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ path: string[] }> }
-) {
-  // Await pour récupérer les params (nouveau dans Next.js 15)
-  const params = await context.params;
+export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+  // Récupérer le chemin complet depuis les paramètres
   const pathSegments = params.path || [];
   const fullPath = pathSegments.join('/');
   
-  // Logs détaillés pour le débogage
+  // Logs détaillés pour diagnostiquer les problèmes de redirection
   console.log(`📄 API Documents: Requête reçue pour: ${fullPath}`);
+  console.log(`🔍 URL complète: ${request.url}`);
+  console.log(`🔍 Méthode: ${request.method}`);
+  console.log(`🔍 Headers: ${JSON.stringify(Object.fromEntries(request.headers))}`);
+  console.log(`🔍 Segments de chemin: ${JSON.stringify(pathSegments)}`);
+  
+  // Détection si on vient d'une redirection
+  const referer = request.headers.get('referer');
+  if (referer) {
+    console.log(`🔍 Référent: ${referer} (possible redirection)`); 
+  }
+  
+  // Vérifier si l'URL contient les nouveaux formats
+  const originalUrl = request.nextUrl.pathname;
+  if (originalUrl.includes('mon-compte-rendu-personnalise') || 
+      originalUrl.includes('mon-accompagnement') || 
+      originalUrl.includes('bienvenu-programme')) {
+    console.log(`🔍 Détection d'une URL conviviale: ${originalUrl}`);
+  }
   console.log(`🔍 API Documents: URL complète: ${request.url}`);
   console.log(`🔑 API Documents: Supabase URL: ${supabaseUrl.substring(0, 20)}...`);
   console.log(`🔑 API Documents: Supabase Anon Key définie: ${!!supabaseAnonKey}`);
