@@ -6,18 +6,18 @@ const nextConfig = {
     return [
       {
         // Compte-rendu : /mon-compte-rendu-personnalise-ID.html
-        source: '/mon-compte-rendu-personnalise-:id*',
-        destination: '/api/documents/compte-rendu/:id*',
+        source: '/mon-compte-rendu-personnalise-:path*',
+        destination: '/api/documents/compte-rendu/:path*',
       },
       {
         // Page de vente : /mon-accompagnement-ID.html
-        source: '/mon-accompagnement-:id*',
-        destination: '/api/documents/vente/:id*',
+        source: '/mon-accompagnement-:path*',
+        destination: '/api/documents/vente/:path*',
       },
       {
         // Onboarding : /bienvenu-programme-ID.html
-        source: '/bienvenu-programme-:id*',
-        destination: '/api/documents/onboarding/:id*'
+        source: '/bienvenu-programme-:path*',
+        destination: '/api/documents/onboarding/:path*'
       }
     ]
   },
